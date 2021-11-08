@@ -6,43 +6,48 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import os
 import time
 import logging
+import logging.handlers
+import sys
 
-"""
-saved searches:
-55048 - 84943 - Accepted - dormant volunteers / reconnect - Monthly
-55050 - 84937 - Acc - Feedback reminder - Weekly
-55052 - 84939 - acc - Police check expired - Weekly
-55053 - 84941 - Acc - PLI expired - Weekly
-55054 - 84938 - acc - session reminder (7 days ahead) - Weekly
-55056 - 84940 - Acc - WWCC expired - Weekly
-55060 - 84269 - In process - checks not received - weekly
-55062 - 84806 - in process - training not scheduled - monthly
-"""
+
+logging.basicConfig()
+fac = 'local4'
+hdl = logging.handlers.SysLogHandler(address="/dev/log", facility=fac)
+logger = logging.getLogger(__name__)
+logger.addHandler(hdl)
+logger.setLevel(logging.INFO)
+
 searches = {
-    "weekly": [
-        {'searchVal': "55050", "templateVal": "84937", "desc": "Accepted - Feedback Reminder"},
-        {'searchVal': "55052", "templateVal": "84939", "desc": "Accepted - Police check expired"},
-        {'searchVal': "55053", "templateVal": "84941", "desc": "Accepted - PLI expired"},
-        {'searchVal': "55054", "templateVal": "84938", "desc": "Accepted - Session reminder"},
-        {'searchVal': "55056", "templateVal": "84940", "desc": "Accepted - WWCC expired"},
-        {'searchVal': "55060", "templateVal": "84269", "desc": "In Process - Checks not received"},
+    "twoDays": [
+        # {'searchVal': "55563", "templateVal": "88376", "desc": "Accepted - Session 2 days reminder"},#on hold
+    ],
+    "weeklyFri": [
+        {'searchVal': "55558", "templateVal": "84937", "desc": "Accepted - Feedback Reminder"},
+        {'searchVal': "55560", "templateVal": "84939", "desc": "Accepted - Police check expired"},
+        # {'searchVal': "55561", "templateVal": "84941", "desc": "Accepted - PLI expired"}, #on hold
+    ],
+    "weeklySun": [
+        {'searchVal': "55562", "templateVal": "84938", "desc": "Accepted - Session 7 days reminder"},
     ],
     "monthly": [
-        {'searchVal': "55048", "templateVal": "84943", "desc": "Accepted - dormant volunteers"},
-        {'searchVal': "55062", "templateVal": "84806", "desc": "In Process - training not scheduled"},
+        # {'searchVal': "55557", "templateVal": "84943", "desc": "Accepted - dormant volunteers"}, #on hold
+        # {'searchVal': "55568", "templateVal": "84806", "desc": "In Process - training not scheduled"},
+        {'searchVal': "55564", "templateVal": "84940", "desc": "Accepted - WWCC expired"},
+        {'searchVal': "56852", "templateVal": "84269", "desc": "In Process - Checks not received"},
     ]
 }
 
 
-def tester(emailList):
+def sendEmails(emailList):
     #set some options
     options = webdriver.ChromeOptions()
     options.add_argument("--incognito")
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     exPath = '/usr/local/bin/chromedriver'
     #load the webdriver
     with (webdriver.Chrome(executable_path=exPath,options=options)) as browser:
         wait = WebDriverWait(browser, 5)
+        browser.set_window_size(1170, 900)
         #navigate to the login page
         browser.get("https://app.betterimpact.com/Login/Admin")
         usernameInput = wait.until(EC.visibility_of_element_located((By.ID, "UserName")))
@@ -54,8 +59,7 @@ def tester(emailList):
         browser.get("https://app.betterimpact.com/Organization/Email/SendEmail")
         for emailDetails in emailList:
             try:
-                print()
-                print(emailDetails["desc"])
+                logger.info(emailDetails["desc"])
                 savedElm = wait.until(EC.visibility_of_element_located((
                     By.ID, 
                     "UserSearchSavedSearchesDropDown"
@@ -72,26 +76,33 @@ def tester(emailList):
                         "EmailModel_TemplateOptions"
                     )))
                 except TimeoutException:
-                    print("No results")
+                    logger.info("No emails to send")
                     emailDetails["result"] = "No emails to send"
                     continue
                 templateSelect = Select(templateElm)
                 templateSelect.select_by_value(emailDetails["templateVal"])
                 time.sleep(1)
-                # browser.find_element_by_id("SendEmailButton").click()
-                # time.sleep(1)
-                # try:
-                #     browser.find_element_by_id("TemplateDialogConfirmButton").click()
-                # except Exception as e:
-                #     print("no confirmation box")
-                #     print(str(e))
+                browser.find_element_by_id("SendEmailButton").click()
+                time.sleep(1)
+                try:
+                    browser.find_element_by_id("TemplateDialogConfirmButton").click()
+                except Exception as e:
+                    logger.debug("no confirmation box")
+                    logger.debug(str(e))
+                logger.debug("Success")
                 emailDetails["result"] = "Success"
-                print("success")
                 time.sleep(4)
             except Exception as e:
                 emailDetails["result"] = "Error:\n{}".format(str(e))
-    print(emailList)
+                logger.error(str(e))
+    # print(emailList)
 
 
 if __name__ == "__main__":
-    tester(searches["weekly"])
+    try:
+        logger.info("Sending {} emails".format(sys.argv[1]))
+        sendEmails(searches[sys.argv[1]])
+        logger.info("Done")
+    except Exception as e:
+        logger.error("Fatal Error")
+        logger.error(str(e))
