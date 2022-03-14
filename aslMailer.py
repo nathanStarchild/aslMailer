@@ -23,7 +23,7 @@ searches = {
     ],
     "weeklyFri": [
         {'searchVal': "55558", "templateVal": "84937", "desc": "Accepted - Feedback Reminder"},
-        {'searchVal': "55560", "templateVal": "84939", "desc": "Accepted - Police check expired"},
+        # {'searchVal': "55560", "templateVal": "84939", "desc": "Accepted - Police check expired"}, #on hold
         # {'searchVal': "55561", "templateVal": "84941", "desc": "Accepted - PLI expired"}, #on hold
     ],
     "weeklySun": [
@@ -32,8 +32,8 @@ searches = {
     "monthly": [
         # {'searchVal': "55557", "templateVal": "84943", "desc": "Accepted - dormant volunteers"}, #on hold
         # {'searchVal': "55568", "templateVal": "84806", "desc": "In Process - training not scheduled"},
-        {'searchVal': "55564", "templateVal": "84940", "desc": "Accepted - WWCC expired"},
-        {'searchVal': "56852", "templateVal": "84269", "desc": "In Process - Checks not received"},
+        # {'searchVal': "55564", "templateVal": "84940", "desc": "Accepted - WWCC expired"},
+        # {'searchVal': "56852", "templateVal": "84269", "desc": "In Process - Checks not received"},
     ]
 }
 
